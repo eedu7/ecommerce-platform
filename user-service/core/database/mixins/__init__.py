@@ -1,6 +1,3 @@
 from .timestamp import TimestampMixin
 
-
-__all__ = [
-    "TimestampMixin"
-]
+__all__ = ["TimestampMixin"]
