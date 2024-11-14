@@ -1,0 +1,34 @@
+version: "3.8"
+
+services:
+  postgresql-user-service:
+    image: postgres:17-alpine3.20
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: user-service
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata/user-service:/var/lib/postgresql/data
+    networks:
+      - user_service_network
+    restart: always
+
+  postgresql-user-service-test:
+    image: postgres:17-alpine3.20
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: user-service-test
+    ports:
+      - "5431:5431"
+    volumes:
+      - ./postgresql-test/user-service:/var/lib/postgresql/data
+    networks:
+      - user_service_network
+    restart: always
+
+networks:
+  user_service_network:
+    driver: bridge
