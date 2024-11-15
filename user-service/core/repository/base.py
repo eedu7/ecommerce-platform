@@ -24,7 +24,7 @@ class BaseRepository(Generic[ModelType]):
         attributes = attributes or {}
         model = self.model_class(**attributes)
         self.session.add(model)
-        await self.session.flush()  # Ensures the object gets an ID
+        await self.session.flush()
         return model
 
     async def get_all(
