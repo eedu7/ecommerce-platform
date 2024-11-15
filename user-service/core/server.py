@@ -1,12 +1,14 @@
 from typing import List
 
 from fastapi import FastAPI, Request
+from fastapi.middleware import Middleware
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
 
 from api import router
 from core.exceptions import CustomException
+from core.fastapi.middlewares import (AuthBackend, AuthenticationMiddleware,
+                                      SQLAlchemyMiddleware)
 
 
 def on_auth_error(request: Request, exc: Exception):
@@ -42,6 +44,12 @@ def make_middleware() -> List[Middleware]:
             allow_methods=["*"],
             allow_headers=["*"],
         ),
+        Middleware(
+            AuthenticationMiddleware,
+            backend=AuthBackend(),
+            on_error=on_auth_error,
+        ),
+        Middleware(SQLAlchemyMiddleware),
     ]
     return middleware
 
