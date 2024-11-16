@@ -9,7 +9,7 @@ from core.database.mixins import TimestampMixin
 
 
 class User(Base, TimestampMixin):
-    __tablename__ = "users"
+    __tablename__ = "authentication"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     uuid: Mapped[UUID] = mapped_column(
