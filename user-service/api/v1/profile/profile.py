@@ -14,3 +14,13 @@ def get_user(
     user: User = Depends(get_current_user),
 ) -> User:
     return user
+
+
+@profile_router.put("/")
+async def update_profile(user: User = Depends(get_current_user)):
+    return {"message": "User updated", "user": user}
+
+
+@profile_router.put("/password")
+async def update_password(user: User = Depends(get_current_user)):
+    return {"message": "User password updated", "user": user}
