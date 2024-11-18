@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class TimestampMixin:
-    """Mixin class to add created_at and updated_at timestamps to models."""
+    """Mixin class to add created_at, updated_at and deleted_by timestamps to models."""
 
     @declared_attr
     def created_at(cls) -> Mapped[Optional[DateTime]]:
@@ -19,4 +19,12 @@ class TimestampMixin:
 
         return mapped_column(
             DateTime, default=func.now(), nullable=False, onupdate=func.now()
+        )
+
+    @declared_attr
+    def deleted_at(cls) -> Mapped[Optional[DateTime]]:
+        """Timestamp for when the record was deleted."""
+        return mapped_column(
+            DateTime,
+            nullable=True,
         )
