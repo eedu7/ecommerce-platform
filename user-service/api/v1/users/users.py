@@ -27,5 +27,5 @@ async def delete_user(user: User = Depends(get_current_user)):
     return {
         "message": "Deleting user account by the admin",
         "task": "Deleting user account",
-        "user": user
+        "user": user,
     }
