@@ -2,9 +2,9 @@ from functools import partial
 
 from fastapi import Depends
 
-from app.controllers import AuthController, UserController, AddressController
-from app.models import User, Address
-from app.repositories import UserRepository, AddressRepository
+from app.controllers import AddressController, AuthController, UserController
+from app.models import Address, User
+from app.repositories import AddressRepository, UserRepository
 from core.database import get_session
 
 
