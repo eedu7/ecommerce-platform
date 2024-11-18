@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, status
+from starlette.responses import JSONResponse
 
 from app.controllers import AuthController
 from app.models import User
@@ -30,3 +31,17 @@ async def login_user(
     return await auth_controller.login(
         email=login_user_request.email, password=login_user_request.password
     )
+
+
+@auth_router.post("/logout")
+async def logout_user():
+    return {
+        "message": "You have been logged out.",
+    }
+
+
+@auth_router.post("/refresh-token")
+async def refresh_token():
+    return {
+        "message": "You have been refreshed.",
+    }
