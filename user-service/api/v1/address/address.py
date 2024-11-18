@@ -1,4 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from app.controllers import AddressController
+from app.models import User
+from core.factory import Factory
+from core.fastapi.dependencies import get_current_user
 
 address_router: APIRouter = APIRouter()
 
@@ -6,11 +11,14 @@ address_router: APIRouter = APIRouter()
 @address_router.get(
     "/",
 )
-async def get_address():
+async def get_address(
+    address_controller: AddressController = Depends(Factory().get_address_controller),
+    current_user: User = Depends(get_current_user),
+):
     """
     Retrieve a list of all saved addresses for the current user
     """
-    return {"message": "Hello World"}
+    ...
 
 
 @address_router.post(
