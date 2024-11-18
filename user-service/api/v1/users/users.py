@@ -1,23 +1,31 @@
-from typing import List
-
 from fastapi import APIRouter, Depends
 
-from app.controllers import UserController
 from app.models import User
-from app.schemas.responses.users import UserResponse
-from core.factory import Factory
-from core.fastapi.dependencies import AuthenticationRequired, get_current_user
+from core.fastapi.dependencies import get_current_user
 
 user_router: APIRouter = APIRouter()
 
 
-@user_router.get(
-    "/",
-    dependencies=[Depends(AuthenticationRequired)],
-    response_model=List[UserResponse],
-)
-async def get_users(
-    user_controller: UserController = Depends(Factory().get_user_controller),
-) -> List[User]:
-    users = await user_controller.get_all()
-    return users
+@user_router.get("/")
+async def get_users():
+    return {
+        "message": "Getting user details",
+        "task": "For admin to get all user details",
+    }
+
+
+@user_router.post("/{user_id}")
+async def get_user_detail(user_id: str):
+    return {
+        "message": "Getting user details",
+        "task": "For admin to get user details by user id",
+    }
+
+
+@user_router.delete("/")
+async def delete_user(user: User = Depends(get_current_user)):
+    return {
+        "message": "Deleting user account by the admin",
+        "task": "Deleting user account",
+        "user": user
+    }
