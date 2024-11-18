@@ -16,7 +16,7 @@ class Factory:
 
     # Repositories
     user_repository = partial(UserRepository, User)
-    address_repositryo = partial(AddressRepository, Address)
+    address_repository = partial(AddressRepository, Address)
 
     def get_user_controller(self, db_session=Depends(get_session)):
         return UserController(
@@ -30,5 +30,5 @@ class Factory:
 
     def get_address_controller(self, db_session=Depends(get_session)):
         return AddressController(
-            address_repository=self.address_repositryo(db_session=db_session)
+            address_repository=self.address_repository(db_session=db_session)
         )
