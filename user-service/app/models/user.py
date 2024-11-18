@@ -1,9 +1,11 @@
+from typing import List
 from uuid import uuid4
 
 from sqlalchemy import BigInteger, Boolean, Unicode
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.models.address import Address
 from core.database import Base
 from core.database.mixins import TimestampMixin, UserAuditMixin
 
@@ -24,8 +26,11 @@ class User(Base, TimestampMixin, UserAuditMixin):
     profile_image_url: Mapped[bool] = mapped_column(Unicode(255), nullable=True)
     phone_number: Mapped[str] = mapped_column(Unicode(30), nullable=True)
 
+    # Relationship to Address model
+    address: Mapped[List["Address"]] = relationship("Address", back_populates="user")
+
     def __repr__(self):
-        return f"ID: {self.id}, username: {self.username}"
+        return f"User(id={self.id}, uuid={self.uuid}, username={self.username}, email={self.email})"
 
     def __str__(self):
         return self.__repr__()
