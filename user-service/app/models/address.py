@@ -35,9 +35,6 @@ class Address(Base, TimestampMixin, UserAuditMixin):
         BigInteger, ForeignKey("users.id"), nullable=False
     )
 
-    # Relationship to User
-    user: Mapped["User"] = relationship("User", back_populates="addresses")
-
     def __repr__(self):
         """Returns a detailed string representation of the Address instance."""
         return (

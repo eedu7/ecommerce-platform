@@ -25,9 +25,6 @@ class User(Base, TimestampMixin, UserAuditMixin):
     profile_image_url: Mapped[bool] = mapped_column(Unicode(255), nullable=True)
     phone_number: Mapped[str] = mapped_column(Unicode(30), nullable=True)
 
-    # Relationship to Address model
-    address: Mapped[List["Address"]] = relationship("Address", back_populates="user")
-
     def __repr__(self):
         return f"User(id={self.id}, uuid={self.uuid}, username={self.username}, email={self.email})"
 
