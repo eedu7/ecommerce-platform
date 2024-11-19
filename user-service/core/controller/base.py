@@ -1,4 +1,4 @@
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Dict, Generic, Type, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -26,14 +26,7 @@ class BaseController(Generic[ModelType]):
         :return: The model instance.
         """
 
-        db_obj = await self.repository.get_by(
-            field="id", value=id_, join_=join_, unique=True
-        )
-        if not db_obj:
-            raise NotFoundException(
-                f"{self.model_class.__tablename__.title()} with id: {id} does not exist"
-            )
-
+        db_obj = await self.repository.get_by_id(id_)
         return db_obj
 
     async def get_by_uuid(self, uuid: UUID, join_: set[str] | None = None) -> ModelType:
@@ -45,28 +38,22 @@ class BaseController(Generic[ModelType]):
         :return: The model instance.
         """
 
-        db_obj = await self.repository.get_by(
-            field="uuid", value=uuid, join_=join_, unique=True
-        )
-        if not db_obj:
-            raise NotFoundException(
-                f"{self.model_class.__tablename__.title()} with id: {uuid} does not exist"
-            )
+        db_obj = await self.repository.get_by(field="uuid", value=uuid)
         return db_obj
 
     async def get_all(
-        self, skip: int = 0, limit: int = 100, join_: set[str] | None = None
+        self, skip: int = 0, limit: int = 100, filters: Dict[str, Any] | None = None
     ) -> list[ModelType]:
         """
         Returns a list of records based on pagination params.
 
         :param skip: The number of records to skip.
         :param limit: The number of records to return.
-        :param join_: The joins to make.
+        :param filters: The filters to apply to the query.
         :return: A list of records.
         """
 
-        response = await self.repository.get_all(skip, limit, join_)
+        response = await self.repository.get_all(skip, limit, filters)
         return response
 
     @Transactional(propagation=Propagation.REQUIRED)
@@ -81,26 +68,12 @@ class BaseController(Generic[ModelType]):
         return create
 
     @Transactional(propagation=Propagation.REQUIRED)
-    async def delete(self, model: ModelType) -> bool:
+    async def delete(self, address_uuid: UUID) -> bool:
         """
         Deletes the Object from the DB.
 
-        :param model: The model to delete.
+        :param address_uuid: The model to delete.
         :return: True if the object was deleted, False otherwise.
         """
-        delete = await self.repository.delete(model)
+        delete = await self.repository.delete(address_uuid)
         return delete
-
-    @staticmethod
-    async def extract_attributes_from_schema(
-        schema: BaseModel, excludes: set = None
-    ) -> dict[str, Any]:
-        """
-        Extracts the attributes from the schema.
-
-        :param schema: The schema to extract the attributes from.
-        :param excludes: The attributes to exclude.
-        :return: The attributes.
-        """
-
-        return await schema.dict(exclude=excludes, exclude_unset=True)

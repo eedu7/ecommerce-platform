@@ -1,4 +1,5 @@
 from typing import Any, Dict, Generic, Optional, Sequence, Type, TypeVar
+from uuid import UUID
 
 from sqlalchemy import Result
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -79,7 +80,7 @@ class BaseRepository(Generic[ModelType]):
         result = await self.session.execute(query)
         return result.scalars().first()
 
-    async def delete(self, _id: str) -> bool | None:
+    async def delete(self, uuid: UUID) -> bool | None:
         """
         Delete a record by its unique ID.
 
@@ -89,14 +90,14 @@ class BaseRepository(Generic[ModelType]):
         Returns:
             bool | None: True if deletion was successful, None if the record was not found.
         """
-        model = await self.get_by(field="id", value=_id)
+        model = await self.get_by(field="uuid", value=uuid)
         if model is None:
             return None
         await self.session.delete(model)
         await self.session.commit()
         return True
 
-    async def get_by_id(self, _id: str) -> ModelType:
+    async def get_by_id(self, _id: str | int) -> ModelType:
         """
         Retrieve a single record by its unique ID.
 
