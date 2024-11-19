@@ -12,6 +12,6 @@ class UserResponse(BaseModel):
 
 class UserResponseDetail(UserResponse):
     phone_number: str | None = None
-    is_admin: bool
+    is_admin: bool = Field(False, examples=["true", "false"])
     email_verified: bool
     profile_image_url: str | None = None
