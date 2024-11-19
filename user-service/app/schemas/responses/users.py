@@ -8,3 +8,10 @@ class UserResponse(BaseModel):
 
     class Config:
         form_attributes = True
+
+
+class UserResponseDetail(UserResponse):
+    phone_number: str | None = None
+    is_admin: bool
+    email_verified: bool
+    profile_image_url: str | None = None

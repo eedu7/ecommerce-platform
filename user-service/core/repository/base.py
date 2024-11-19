@@ -1,7 +1,7 @@
-from functools import reduce
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Dict, Generic, Optional, Sequence, Type, TypeVar
+from uuid import UUID
 
-from sqlalchemy import Select, func
+from sqlalchemy import Result
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import select
 
@@ -11,122 +11,121 @@ ModelType = TypeVar("ModelType", bound=Base)
 
 
 class BaseRepository(Generic[ModelType]):
-    """Base class for data repositories."""
+    """
+    Generic CRUD (Create, Read, Update, Delete) class for managing database operations
+    on SQLAlchemy models asynchronously.
 
-    def __init__(self, model: Type[ModelType], db_session: AsyncSession):
-        self.session = db_session
-        self.model_class: Type[ModelType] = model
+    This class provides common CRUD operations that can be inherited or instantiated
+    for any SQLAlchemy model. All database operations are performed using an async
+    session for asynchronous access.
+    """
 
-    async def create(self, attributes: Optional[dict[str, Any]] = None) -> ModelType:
+    def __init__(self, model: Type[ModelType], db_session: AsyncSession) -> None:
         """
-        Creates the model instance.
+        Initialize the BaseCRUD instance.
+
+        Args:
+            model (Type[ModelType]): The SQLAlchemy model class to operate on.
+            db_session (AsyncSession): An async database session.
+        """
+        self.session = db_session
+        self.model: Type[ModelType] = model
+
+    async def create(self, attributes: Optional[Dict[str, Any]] = None) -> ModelType:
+        """
+        Create a new record in the database
+        :param attributes: (Dict[str, Any]) - A dictionary of attributes to assign to the new record.
+        :return: ModelType: The created record.
         """
         attributes = attributes or {}
-        model = self.model_class(**attributes)
+        model = self.model(**attributes)
         self.session.add(model)
         await self.session.flush()
         return model
 
     async def get_all(
-        self, skip: int = 0, limit: int = 100, join_: Optional[set[str]] = None
-    ) -> list[ModelType]:
+        self, skip: int = 0, limit: int = 20, filters: Optional[Dict[str, Any]] = None
+    ) -> Sequence[ModelType]:
         """
-        Returns a list of model instances.
-        """
-        query = self._query(join_)
-        query = query.offset(skip).limit(limit)
-        return await self._all(query)
+        Retrieve a list of all records, with optional pagination.
 
-    async def get_by(
-        self,
-        field: str,
-        value: Any,
-        join_: Optional[set[str]] = None,
-        unique: bool = False,
-    ) -> Optional[ModelType]:
-        """
-        Returns the model instance matching the field and value.
-        """
-        query = self._query(join_)
-        query = self._get_by(query, field, value)
+        Args:
+            skip (int): Number of records to skip for pagination.
+            limit (int): Maximum number of records to retrieve.
+            filters (Dict[str, Any], None):
 
-        if unique:
-            return await self._one_or_none(query)
-
-        return await self._all(query)
-
-    async def delete(self, model: ModelType) -> None:
+        Returns:
+            List[ModelType]: A list of model instances.
         """
-        Deletes the model instance.
+        query = select(self.model).offset(skip).limit(limit)
+        if filters:
+            query = query.filter_by(**filters)
+        result: Result = await self.session.execute(query)
+        return result.scalars().all()
+
+    async def get_by(self, field: str, value: Any) -> ModelType:
         """
+        Retrieve a single record by a specified field and value.
+
+        Args:
+            field (str): The field name to filter by.
+            value (Any): The value to filter the field with.
+
+        Returns:
+            ModelType: The first model instance matching the criteria.
+        """
+        query = select(self.model).where(
+            getattr(self.model, field) == value
+        )  # TODO: Adjust the types annotation
+        result = await self.session.execute(query)
+        return result.scalars().first()
+
+    async def delete(self, uuid: UUID) -> bool | None:
+        """
+        Delete a record by its unique ID.
+
+        Args:
+            _id (str): The unique identifier of the record to delete.
+
+        Returns:
+            bool | None: True if deletion was successful, None if the record was not found.
+        """
+        model = await self.get_by(field="uuid", value=uuid)
+        if model is None:
+            return None
         await self.session.delete(model)
+        await self.session.commit()
+        return True
 
-    def _query(
-        self, join_: Optional[set[str]] = None, order_: Optional[dict] = None
-    ) -> Select:
+    async def get_by_id(self, _id: str | int) -> ModelType:
         """
-        Builds a query for the model.
-        """
-        query = select(self.model_class)
-        query = self._maybe_join(query, join_)
-        query = self._maybe_ordered(query, order_)
-        return query
+        Retrieve a single record by its unique ID.
 
-    async def _all(self, query: Select) -> list[ModelType]:
-        """
-        Executes the query and returns all results.
-        """
-        result = await self.session.scalars(query)
-        return result.all()
+        Args:
+            _id (str): The unique identifier of the record.
 
-    async def _one_or_none(self, query: Select) -> Optional[ModelType]:
+        Returns:
+            ModelType: The model instance with the specified ID.
         """
-        Executes the query and returns one or None.
-        """
-        result = await self.session.scalars(query)
-        return result.one_or_none()
+        _model = await self.get_by(field="id", value=_id)
+        return _model
 
-    def _get_by(self, query: Select, field: str, value: Any) -> Select:
+    async def update(self, _id: str, attributes: dict[str, Any]) -> ModelType | None:
         """
-        Filters the query by a field and value.
-        """
-        if not hasattr(self.model_class, field):
-            raise ValueError(f"Invalid field: {field}")
-        return query.where(getattr(self.model_class, field) == value)
+        Update an existing record by ID with specified attributes.
 
-    def _maybe_join(self, query: Select, join_: Optional[set[str]]) -> Select:
-        """
-        Adds joins to the query if specified.
-        """
-        if not join_:
-            return query
-        if not isinstance(join_, set):
-            raise TypeError("join_ must be a set")
-        return reduce(self._add_join_to_query, join_, query)
+        Args:
+            _id (str): The unique identifier of the record to update.
+            attributes (dict[str, Any]): A dictionary of attributes to update on the model.
 
-    def _maybe_ordered(self, query: Select, order_: Optional[dict]) -> Select:
+        Returns:
+            ModelType | None: The updated model instance, or None if not found or attributes are None.
         """
-        Adds ordering to the query if specified.
-        """
-        if not order_:
-            return query
-        for order_type, fields in order_.items():
-            if order_type not in {"asc", "desc"}:
-                raise ValueError("Invalid order type: must be 'asc' or 'desc'")
-            for field in fields:
-                if not hasattr(self.model_class, field):
-                    raise ValueError(f"Invalid order field: {field}")
-                column = getattr(self.model_class, field)
-                query = query.order_by(
-                    column.asc() if order_type == "asc" else column.desc()
-                )
-        return query
+        model = await self.get_by(field="id", value=_id)
+        if model is None or attributes is None:
+            return None
 
-    def _add_join_to_query(self, query: Select, join_: str) -> Select:
-        """
-        Adds a join to the query.
-        """
-        join_method = getattr(self, f"_join_{join_}", None)
-        if not callable(join_method):
-            raise AttributeError(f"No join method for: {join_}")
-        return join_method(query)
+        for key, value in attributes.items():
+            setattr(model, key, value)
+        await self.session.flush()
+        return model

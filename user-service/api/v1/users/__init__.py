@@ -2,7 +2,6 @@ from fastapi import APIRouter
 
 from .users import user_router
 
-users_router: APIRouter = APIRouter()
-users_router.include_router(user_router, tags=["Users"])
+users_router = APIRouter()
 
-__all__ = ["users_router"]
+users_router.include_router(user_router, tags=["User Management"])
