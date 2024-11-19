@@ -1,11 +1,11 @@
 from typing import Any, Dict, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.controllers import AddressController
 from app.models import Address, User
-from app.schemas.requests.address import AddressRequest
+from app.schemas.requests.address import AddressRequest, AddressUpdateRequest
 from core.exceptions import UnauthorizedException
 from core.factory import Factory
 from core.fastapi.dependencies import AuthenticationRequired, get_current_user
@@ -70,16 +70,28 @@ async def get_address_detail(
 @address_router.put(
     "/{address_id}",
 )
-async def update_address_detail(address_id: str):
-    """
-    Update the details of a saved address
-    :param address_id:
-    :return:
-    """
-    return {
-        "message": "Updated details of a specific address",
-        "address_id": address_id,
-    }
+@address_router.patch("/{address_id}")
+async def update_address_detail(
+    request: Request,
+    address_id: UUID,
+    address_data: AddressUpdateRequest,
+    address_controller: AddressController = Depends(Factory().get_address_controller),
+    current_user: User = Depends(get_current_user),
+):
+    address = await address_controller.get_by_uuid(address_id)
+    if address.user_id != current_user.id:
+        raise UnauthorizedException("Unauthorized access")
+
+    updated_data: Dict[str, Any] | None = None
+
+    match request.method:
+        case "PATCH":
+            updated_data = address_data.model_dump(exclude_none=True)
+        case "PUT":
+            updated_data = address_data.model_dump()
+
+    updated_address = await address_controller.update_model(address_id, updated_data)
+    return updated_address
 
 
 @address_router.delete("/{address_id}")
@@ -88,11 +100,6 @@ async def delete_address_detail(
     address_controller: AddressController = Depends(Factory().get_address_controller),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Delete a saved address
-    :param address_id:
-    :return:
-    """
     address = await address_controller.get_by_uuid(address_id)
     if address.user_id != current_user.id:
         raise UnauthorizedException("Unauthorized")

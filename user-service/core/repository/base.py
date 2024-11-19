@@ -110,12 +110,12 @@ class BaseRepository(Generic[ModelType]):
         _model = await self.get_by(field="id", value=_id)
         return _model
 
-    async def update(self, _id: str, attributes: dict[str, Any]) -> ModelType | None:
+    async def update(self, _id: UUID, attributes: dict[str, Any]) -> ModelType | None:
         """
         Update an existing record by ID with specified attributes.
 
         Args:
-            _id (str): The unique identifier of the record to update.
+            _id (UUID): The unique identifier of the record to update.
             attributes (dict[str, Any]): A dictionary of attributes to update on the model.
 
         Returns:

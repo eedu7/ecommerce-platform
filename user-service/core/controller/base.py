@@ -17,24 +17,22 @@ class BaseController(Generic[ModelType]):
         self.model_class = model
         self.repository = repository
 
-    async def get_by_id(self, id_: int, join_: set[str] | None = None) -> ModelType:
+    async def get_by_id(self, id_: int) -> ModelType:
         """
         Returns the model instance matching the id.
 
         :param id_: The id to match.
-        :param join_: The joins to make.
         :return: The model instance.
         """
 
         db_obj = await self.repository.get_by_id(id_)
         return db_obj
 
-    async def get_by_uuid(self, uuid: UUID, join_: set[str] | None = None) -> ModelType:
+    async def get_by_uuid(self, uuid: UUID) -> ModelType:
         """
         Returns the model instance matching the uuid.
 
         :param uuid: The uuid to match.
-        :param join_: The joins to make.
         :return: The model instance.
         """
 
@@ -77,3 +75,8 @@ class BaseController(Generic[ModelType]):
         """
         delete = await self.repository.delete(address_uuid)
         return delete
+
+    @Transactional(propagation=Propagation.REQUIRED)
+    async def update_model(self, uuid: UUID, attributes: dict[str, Any]) -> ModelType:
+        updated = await self.repository.update(uuid, attributes)
+        return updated
