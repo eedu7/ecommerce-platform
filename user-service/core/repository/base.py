@@ -85,7 +85,7 @@ class BaseRepository(Generic[ModelType]):
         Delete a record by its unique ID.
 
         Args:
-            _id (str): The unique identifier of the record to delete.
+            uuid (str): The unique identifier of the record to delete.
 
         Returns:
             bool | None: True if deletion was successful, None if the record was not found.
@@ -121,7 +121,7 @@ class BaseRepository(Generic[ModelType]):
         Returns:
             ModelType | None: The updated model instance, or None if not found or attributes are None.
         """
-        model = await self.get_by(field="id", value=_id)
+        model = await self.get_by(field="uuid", value=_id)
         if model is None or attributes is None:
             return None
 
