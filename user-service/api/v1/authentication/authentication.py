@@ -1,24 +1,27 @@
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 
 from app.controllers import AuthController
-from app.models import User
 from app.schemas.extras.token import Token
 from app.schemas.requests.users import LoginUserRequest, RegisterUserRequest
-from app.schemas.responses.users import UserResponse
 from core.factory import Factory
 
 auth_router: APIRouter = APIRouter()
 
 
-@auth_router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
+@auth_router.post("/", status_code=status.HTTP_201_CREATED)
 async def register_user(
     register_user_request: RegisterUserRequest,
     auth_controller: AuthController = Depends(Factory().get_auth_controller),
-) -> User:
-    return await auth_controller.register(
+) -> JSONResponse:
+    await auth_controller.register(
         email=register_user_request.email,
         password=register_user_request.password,
         username=register_user_request.username,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={"message": "User registered successfully"},
     )
 
 

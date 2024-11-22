@@ -42,10 +42,10 @@ class AuthController(BaseController[User]):
         user = await self.user_repository.get_by_email(email)
 
         if not user:
-            raise BadRequestException("Invalid credentials")
+            raise BadRequestException("Invalid credentials email")
 
         if not PasswordHandler.verify(user.password, password):
-            raise BadRequestException("Invalid credentials")
+            raise BadRequestException("Invalid credentials password")
 
         return Token(
             access_token=JWTHandler.encode(payload={"user_id": user.id}),
