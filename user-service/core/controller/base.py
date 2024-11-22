@@ -25,10 +25,10 @@ class BaseController(Generic[ModelType]):
         :return: The model instance.
         """
 
-        db_obj = await self.repository.get_by_id(id_)
+        db_obj = await self.repository.get_by(field="id", value=id_)
         return db_obj
 
-    async def get_by_uuid(self, uuid: UUID) -> ModelType:
+    async def get_by_uuid(self, uuid: UUID) -> ModelType | None:
         """
         Returns the model instance matching the uuid.
 
@@ -66,17 +66,13 @@ class BaseController(Generic[ModelType]):
         return create
 
     @Transactional(propagation=Propagation.REQUIRED)
-    async def delete(self, address_uuid: UUID) -> bool:
-        """
-        Deletes the Object from the DB.
-
-        :param address_uuid: The model to delete.
-        :return: True if the object was deleted, False otherwise.
-        """
-        delete = await self.repository.delete(address_uuid)
+    async def delete(self, model: ModelType) -> bool:
+        delete = await self.repository.delete(model)
         return delete
 
     @Transactional(propagation=Propagation.REQUIRED)
-    async def update_model(self, uuid: UUID, attributes: dict[str, Any]) -> ModelType:
-        updated = await self.repository.update(uuid, attributes)
+    async def update_model(
+        self, model: ModelType, attributes: dict[str, Any]
+    ) -> ModelType:
+        updated = await self.repository.update(model, attributes)
         return updated

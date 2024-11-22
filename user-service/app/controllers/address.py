@@ -1,4 +1,4 @@
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Optional, Sequence
 from uuid import UUID
 
 from fastapi import status
@@ -9,25 +9,24 @@ from app.repositories import AddressRepository
 from app.schemas.requests.address import (AddressPartialUpdateRequest,
                                           AddressRequest, AddressUpdateRequest)
 from core.controller import BaseController
-from core.exceptions import BadRequestException
+from core.exceptions import BadRequestException, NotFoundException
 
 
 class AddressController(BaseController[Address]):
     def __init__(self, address_repository: AddressRepository):
         super().__init__(model=Address, repository=address_repository)
+
         self.address_repository = address_repository
 
-    async def get_all_user_address(
-        self, user_id: int, skip: int, limit: int
+    async def get_by_user_address(
+        self, user_id: int, skip: int = 0, limit: int = 20
     ) -> Sequence[Address]:
-        filters: Dict[str, int] = {"user_id": user_id}
         try:
-            addresses: Sequence[Address] = await self.address_repository.get_all(
-                skip=skip, limit=limit, filters=filters
+            return await self.address_repository.get_by_user_address(
+                user_id, skip=skip, limit=limit
             )
-            return addresses
         except Exception as e:
-            raise BadRequestException(f"Error getting all user addresses. {e}")
+            raise BadRequestException(f"Error getting address. {e}")
 
     async def add_user_address(self, user_id: int, address: AddressRequest) -> Address:
         data: Dict[str, Any] = address.model_dump()
@@ -39,38 +38,50 @@ class AddressController(BaseController[Address]):
             }
         )
         try:
-            new_address: Address = await self.address_repository.create(data)
-            return new_address
+            return await self.create(data)
         except Exception as e:
             raise BadRequestException(f"Error adding user address. {e}")
 
     async def update_user_address(
         self,
         address_uuid: UUID,
-        address: AddressUpdateRequest | AddressPartialUpdateRequest,
+        address_data: AddressUpdateRequest | AddressPartialUpdateRequest,
         partial_update: bool = False,
     ) -> Address:
+        address: Address | None = await self.get_by_uuid(address_uuid)
+
+        if not address:
+            raise NotFoundException(f"Address {address_uuid} not found")
+
         if partial_update:
-            data: Dict[str, Any] = address.model_dump(exclude_none=True)
+            address_data: Dict[str, Any] = address_data.model_dump(exclude_none=True)
         else:
-            data: Dict[str, Any] = address.model_dump()
+            address_data: Dict[str, Any] = address_data.model_dump()
 
         try:
-            updated_address: Address = await self.address_repository.update(
-                address_uuid, data
-            )
+            updated_address: Address = await self.update_model(address, address_data)
             return updated_address
         except Exception as e:
             raise BadRequestException(f"Error updating user address. {e}")
 
     async def delete_user_address(self, address_uuid: UUID) -> JSONResponse:
+        """
+        Delete a user's address by UUID.
+
+        Args:
+            address_uuid (UUID): UUID of the address to delete.
+
+        Returns:
+            JSONResponse: HTTP response indicating success or failure.
+        """
+        address: Optional[Address] = await self.get_by_uuid(address_uuid)
+        if not address:
+            raise NotFoundException(f"Address {address_uuid} not found")
         try:
-            deleted: bool = await self.repository.delete(address_uuid)
-            if deleted:
-                return JSONResponse(
-                    status_code=status.HTTP_204_NO_CONTENT,
-                    content={"message": "User address deleted"},
-                )
-            raise BadRequestException(f"Error deleting user address. {deleted}")
+            await self.delete(address)
+            return JSONResponse(
+                status_code=status.HTTP_204_NO_CONTENT,
+                content={"message": "User address deleted"},
+            )
         except Exception as e:
-            raise BadRequestException(f"Error deleting user address. {e}")
+            raise BadRequestException(f"Error deleting user address: {e}")

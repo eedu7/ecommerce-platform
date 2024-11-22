@@ -26,20 +26,20 @@ async def get_address(
     address_controller: AddressController = Depends(Factory().get_address_controller),
     current_user: User = Depends(get_current_user),
 ):
-    return await address_controller.get_all_user_address(current_user.id, skip, limit)
+    return await address_controller.get_by_user_address(current_user.id, skip, limit)
 
 
 @address_router.get(
-    "/{address_id}",
+    "/{address_uuid}",
 )
 async def get_address_detail(
-    address_id: UUID,
+    address_uuid: UUID,
     address_controller: AddressController = Depends(Factory().get_address_controller),
 ):
     """
     Retrieve the details of a saved address
     """
-    address: Address = await address_controller.get_by_uuid(address_id)
+    address: Address = await address_controller.get_by_uuid(address_uuid)
     return address
 
 
@@ -54,47 +54,30 @@ async def add_address(
     return await address_controller.add_user_address(current_user.id, address_data)
 
 
-@address_router.put("/{address_id}")
+@address_router.put("/{address_uuid}")
 async def update_address_detail(
-    address_id: UUID,
+    address_uuid: UUID,
     address_data: AddressUpdateRequest,
     address_controller: AddressController = Depends(Factory().get_address_controller),
 ):
-    return await address_controller.update_user_address(address_id, address_data)
+    return await address_controller.update_user_address(address_uuid, address_data)
 
 
-@address_router.patch("/{address_id}")
+@address_router.patch("/{address_uuid}")
 async def update_address_detail(
-    address_id: UUID,
+    address_uuid: UUID,
     address_data: AddressPartialUpdateRequest,
     address_controller: AddressController = Depends(Factory().get_address_controller),
 ):
     return await address_controller.update_user_address(
-        address_id, address_data, partial_update=True
+        address_uuid, address_data, partial_update=True
     )
 
 
-@address_router.delete("/{address_id}")
+@address_router.delete("/{address_uuid}")
 async def delete_address_detail(
-    address_id: UUID,
+    address_uuid: UUID,
     address_controller: AddressController = Depends(Factory().get_address_controller),
-    current_user: User = Depends(get_current_user),
 ):
-    address = await address_controller.get_by_uuid(address_id)
-    if address.user_id != current_user.id:
-        raise UnauthorizedException(
-            "Access denied: This address does not belong to the current user."
-        )
-
-    deleted: bool = await address_controller.delete(address_id)
-
-    if deleted:
-        return JSONResponse(
-            status_code=status.HTTP_204_NO_CONTENT,
-            content={"message": "Address deleted"},
-        )
-
-    return JSONResponse(
-        status_code=status.HTTP_204_NO_CONTENT,
-        content={"message": "Address deletion failed"},
-    )
+    deleted = await address_controller.delete_user_address(address_uuid)
+    return deleted

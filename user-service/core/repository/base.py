@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Dict, Generic, Optional, Sequence, Type, TypeVar
 from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -42,10 +42,10 @@ class BaseRepository(Generic[ModelType]):
         Returns:
             ModelType: The created record instance.
         """
-        attributes = attributes or {}
+        if attributes is None:
+            attributes = {}
         new_record = self.model(**attributes)
         self.session.add(new_record)
-        await self.session.flush()
         return new_record
 
     async def get_all(
@@ -66,6 +66,7 @@ class BaseRepository(Generic[ModelType]):
         if filters:
             query = query.filter_by(**filters)
         result = await self.session.execute(query)
+
         return result.scalars().all()
 
     async def get_by(self, field: str, value: Any) -> Optional[ModelType]:
@@ -82,30 +83,6 @@ class BaseRepository(Generic[ModelType]):
         query = select(self.model).where(getattr(self.model, field) == value)
         result = await self.session.execute(query)
         return result.scalars().first()
-
-    async def get_by_id(self, _id: int) -> Optional[ModelType]:
-        """
-        Retrieve a record by its unique integer ID.
-
-        Args:
-            _id (int): The unique identifier.
-
-        Returns:
-            Optional[ModelType]: The model instance, or None if not found.
-        """
-        return await self.get_by(field="id", value=_id)
-
-    async def get_by_uuid(self, uuid: UUID) -> Optional[ModelType]:
-        """
-        Retrieve a record by its UUID.
-
-        Args:
-            uuid (UUID): The unique UUID.
-
-        Returns:
-            Optional[ModelType]: The model instance, or None if not found.
-        """
-        return await self.get_by(field="uuid", value=uuid)
 
     async def update(
         self, model: ModelType, attributes: Dict[str, Any]
@@ -141,7 +118,6 @@ class BaseRepository(Generic[ModelType]):
         """
         try:
             await self.session.delete(model)
-            await self.session.commit()
             return True
         except SQLAlchemyError:
             await self.session.rollback()
