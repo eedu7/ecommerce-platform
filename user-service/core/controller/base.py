@@ -17,24 +17,22 @@ class BaseController(Generic[ModelType]):
         self.model_class = model
         self.repository = repository
 
-    async def get_by_id(self, id_: int, join_: set[str] | None = None) -> ModelType:
+    async def get_by_id(self, id_: int) -> ModelType:
         """
         Returns the model instance matching the id.
 
         :param id_: The id to match.
-        :param join_: The joins to make.
         :return: The model instance.
         """
 
-        db_obj = await self.repository.get_by_id(id_)
+        db_obj = await self.repository.get_by(field="id", value=id_)
         return db_obj
 
-    async def get_by_uuid(self, uuid: UUID, join_: set[str] | None = None) -> ModelType:
+    async def get_by_uuid(self, uuid: UUID) -> ModelType | None:
         """
         Returns the model instance matching the uuid.
 
         :param uuid: The uuid to match.
-        :param join_: The joins to make.
         :return: The model instance.
         """
 
@@ -68,12 +66,13 @@ class BaseController(Generic[ModelType]):
         return create
 
     @Transactional(propagation=Propagation.REQUIRED)
-    async def delete(self, address_uuid: UUID) -> bool:
-        """
-        Deletes the Object from the DB.
-
-        :param address_uuid: The model to delete.
-        :return: True if the object was deleted, False otherwise.
-        """
-        delete = await self.repository.delete(address_uuid)
+    async def delete(self, model: ModelType) -> bool:
+        delete = await self.repository.delete(model)
         return delete
+
+    @Transactional(propagation=Propagation.REQUIRED)
+    async def update_model(
+        self, model: ModelType, attributes: dict[str, Any]
+    ) -> ModelType:
+        updated = await self.repository.update(model, attributes)
+        return updated
