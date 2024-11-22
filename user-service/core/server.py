@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from api import router
+from core.config import config
 from core.exceptions import CustomException
 from core.fastapi.middlewares import (AuthBackend, AuthenticationMiddleware,
                                       SQLAlchemyMiddleware)
@@ -58,7 +59,7 @@ def create_app() -> FastAPI:
     app_ = FastAPI(
         title="E-Commerce User-Service",
         description="Backend for the user service i.e Login, Register etc",
-        version="1.0.1",
+        version=config.VERSION,
         middleware=make_middleware(),
     )
     init_routers(app_)

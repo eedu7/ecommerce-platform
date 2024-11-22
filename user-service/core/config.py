@@ -11,8 +11,7 @@ class BaseConfig(BaseSettings):
 
 
 class AppConfig(BaseConfig):
-    """App-specific configuration settings."""
-
+    VERSION: str = "1.0.1"
     POSTGRES_URL: str
     TEST_POSTGRES_URL: str
     JWT_SECRET_KEY: str
